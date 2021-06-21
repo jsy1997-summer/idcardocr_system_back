@@ -1,0 +1,9 @@
+{
+    "Mysql-Database": {
+        "host": "127.0.0.1",
+        "port": "3306",
+        "name":"idcard_ocr",
+        "user": "root",
+        "password": "952316085"
+    }
+}
