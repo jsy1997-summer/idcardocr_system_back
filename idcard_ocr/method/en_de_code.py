@@ -1,7 +1,8 @@
 import json
+import random
 
 from Cryptodome.PublicKey import RSA
-from Cryptodome.Cipher import PKCS1_OAEP, PKCS1_v1_5
+from Cryptodome.Cipher import PKCS1_v1_5
 from django.http import HttpResponse, response
 from urllib import parse
 import base64
@@ -18,13 +19,16 @@ def get_key(request):
     if request.method == "POST":
         key = RSA.generate(2048)
         # 得到公钥
+
         public_key = key.publickey().exportKey()
-        with open("my_rsa_public.pem", "wb") as f:
+        # with open("my_rsa_public.pem", "wb") as f:
+        #     f.write(public_key)
+        with open("rsa_public.pem", "wb") as f:
             f.write(public_key)
 
         # 得到私钥
         encrypted_key = key.exportKey(pkcs=8, protection="scryptAndAES128-CBC")
-        with open("my_private_rsa_key.bin", "wb") as f:
+        with open("rsa_private_key.bin", "wb") as f:
             f.write(encrypted_key)
         key_data = {
             "public_key": str(public_key),
@@ -37,12 +41,12 @@ def get_key(request):
 
 
 # RSA加密
-def encode(data):
+def encode(rsa_data):
     recipient_key = RSA.import_key(
-        open("my_rsa_public.pem").read()
+        open("rsa_public.pem").read()
     )
     pubkey = PKCS1_v1_5.new(recipient_key)
-    endata = pubkey.encrypt(data)
+    endata = pubkey.encrypt(rsa_data)
     return endata
 
 
@@ -50,41 +54,73 @@ def encode(data):
 def decode(en_data):
     en_data = parse.unquote(en_data)
     en_data = base64.b64decode(en_data)
-    private_key = RSA.import_key(open("my_private_rsa_key.bin").read())
+    private_key = RSA.import_key(open("rsa_private_key.bin").read())
     prikey = PKCS1_v1_5.new(private_key)
-    data = prikey.decrypt(en_data, "解密失败")
-    data = data.decode('utf-8')  # 有文字的要经过这个转换
-    return data
+    dataa = prikey.decrypt(en_data, None)
+    dataa = dataa.decode('utf-8')  # 有文字的要经过这个转换
+
+    return dataa
+
+
+# Miser解密
+def miser_decode(at, bt, endata):
+    a = min(at, bt)  # 选择a为较小的数
+    b = max(at, bt)  # 选择b为较大的数值
+    # 加密部分截取出来 688为加密部分的密文的长度
+    cip = endata[a:a + 688]
+
+    # 还原密文的原来的顺序
+    cip = cip[0:b - a] + cip[-(a + b):-1] + cip[-1] + cip[b - a:-(a + b)]
+    # cip1l = 0.5 * len(cip)=344 固定长度
+    fir_sep = cip[0:344]
+    sec_sep = cip[344:-1] + cip[-1]
+    # 两个序列进行解密
+    fir_sep = decode(fir_sep)
+    sec_sep = decode(sec_sep)
+
+    # 根据第一序列和第二序列在整个明文中起始位置的不同选择不同的叠加方法
+    if at > bt:
+        dedata = endata[0:a] + sec_sep[0:b - a] + fir_sep + endata[a + 688:]
+    else:
+        dedata = endata[0:a] + fir_sep[0:b - a] + sec_sep + endata[a + 688:]
+
+    return dedata
 
 
 # Miser加密算法
 # 外部对称加密（分段切割加密），内部非对称加密（ras加密）
-
-# Miser解密
-def miser_decode(a, b, len_cip, endata):
-    a = min(a, b)  # 选择a为较小的数
-    b = max(a, b)  # 选择b为较大的数值
-    # 加密部分截取出来
-    cip = endata[a:a + len_cip]
-    # 还原密文的原来的顺序
-    cip = cip[0:b - a] + cip[-(a + b):-1] + cip[b - a:-(a + b)]
-    cip1l = 0.5 * len(cip)
-    fir_sep = cip[0:cip1l]
-    sec_sep = cip[cip1l:-1]
-    # 两个序列进行解密
-    fir_sep = decode(fir_sep)
-    sec_sep = decode(sec_sep)
-    dedata = endata[0:a] + fir_sep[0:b - a] + sec_sep + endata[a + len_cip:-1]
-    return dedata
+# Miser 加密
+def miser_encode(res_data):
+    res_data = str(res_data)
+    fir = random.randint(0, 30)  # 第一个序列的起始位置
+    sec = random.randint(fir, 30)  # 第二个序列的起始位置
+    fir_seq = res_data[fir:fir + 50]  # 截取长度为50的明文串为第一个序列
+    sec_seq = res_data[sec:sec + 50]  # 截取长度为50的明文串为第二个序列
+    res1 = json.dumps(fir_seq)  # 转换为json格式，这样才能使得属性是双引号，然后才能转换为str格式
+    res1 = bytes(res1, encoding="utf8")  # 转换为bytes格式，否则encode无法接受
+    res2 = json.dumps(sec_seq)
+    res2 = bytes(res2, encoding="utf8")
+    fir_cip = encode(res1)  # 生成第一段序列的密文256
+    sec_cip = encode(res2)  # 生成第二段序列的密文256
+    fir_cip = base64.b64encode(fir_cip)  # 长度344
+    sec_cip = base64.b64encode(sec_cip)
+    cip_all = fir_cip + sec_cip
+    cip_all = cip_all[0:sec - fir] + cip_all[2 * sec:] + cip_all[sec - fir:2 * sec]  # 打乱密文
+    res_all = res_data[0:fir] + str(cip_all) + res_data[sec + 50:]
+    return fir, sec, res_all
 
 
 if __name__ == '__main__':
     # get_key()
-    a1 = 12
-    b1 = 9
-    clength = 688
-    # with open('data.txt', 'r') as f:
-    #     endata1 = f.read()
-    endata1 = '如果我是一朵花，我qYubUtW/qR1Q7bmKU0MhNTofU2OD56fvKJpLn6Hm6E7Yhi6/71ul3Oh1Y5x+47t3I7zLmsKUycqf6/BpKJ7M6AVnEeopHX6/kr6TatkH1efTSQqsdHGRQbSgOwKGrKHvdmhT+NlsMylbj8oRdOui2JFD/s/WYj7zZBKpODX52jMV7T7cMWdtslLg0DAe5YNRQ60Cc7FU8SqGgsOmMD0SLoA+hsdHuGsUWl+4hWVUNhWBKG/4uqAFmSr8v94CShbtpLf3o3RW5a/DltEeFS87InE6Usdmz+IFMoBELPHHHpEd5lSGMSZLeuNa04SFYZuNA==F1HrG/q39ht/w78GC3w9az7RXIHNPBxoc9q3oiPbnXu+7u0ypxL8NJFsxLAw0PppOvfNmmNVff5CR5nE68yUFO+kNLrKRdI/hG9DVzTT/LqBUFgyiGjsbf+lIwR/Mx/tVmhAsVvqkjj62kjk6G6JvqEfzUYmthFJ0lpe6eBj4+ZwzPTPbxJXkPojtpwDOMR2FR1816EO6SahPyLuEqDqBooFOFsgjGWBHpnL5E9walf+YJKFjENeGvSbxE1brIALpMzbk/I500u89/E+rG5nu2y5h2n6uZF4sooHioGkIhuPXTH/lS6GaEU4TgpOOp5AyhRqc0C0lYJ45d33JXCqrg==GxY5K9OFyB6bLnS77iMOF生命，出现了奇迹，而担心'
-    data = miser_decode(a1, b1, clength, endata1)
-    print(data)
+    # miser解密测试
+    # a1 = 8
+    # b1 = 3
+    # endata1 = "世界能GDplp+FloQyG65s50zLvygh4G8N4cYIxphCTYyAIYtcPB1C/Xl7mjJ7oarg0PUw8gtXVgs1Uqy7hctcNoU6orV3fe3N95Y4ILtsmCzcaAfOwp+xm9mI5zgaqBAd00I1CGKVsZ1fLpTtrssOgEEa9wyaQTVPbbGHE9n1qpBGA8aTECAO0vn0k5LMooasoCoUpAw55mHb1s14eX1pZcxk3lgW9aFgypvkKzLoqz1FjPjk9WJ4GVufGjNuDnV8iRqbpm1TszoyLQCxL9EbR7drS57QaTZW21eql3QIDZnibyYm/yaSEjKLKb+NpUFJQiZV9Il8eRTweApw==Z3BF5RDVlaIuA8i5g6seBrPwG/omMUVWydJYxLakAMHKn6QKfx7HsEiJhCJRyTrqkrIB/cADMCbPy8NcQgAEuV4SThZeqgIMCVYfQK0KWn/+mbruix6+rnKlApCgMAmhSLJaSfmDCKoxMaXmcdbvnzUG9f+YgvjvEuqUQ/9exoU0tMZV7Pc6JRnSoBXCO+51gNfwbJPV0zxrgFtatUgv/3xAbaR54tXFzq2oUbftOjqiUntQG7IXZbDLVL1eKXqHDbEAZcak90//fxrVdHSKXDwho/vgYyyjTFQv8R/Y6kP0OiPaITWB/BEq3kl+TcoHlRRMXnGJabP/WwAifMp9Hg==t7xmRiQZ1dz无关，人间毫无留恋，一切散为烟"
+    # data = miser_decode(a1, b1, endata1)
+    # print(data)
+    # miser加密测试
+    resdata = {'name': '张志学', 'sex': '男', 'idnum': '230103198602230916', 'birth': '19860223', 'nation': '汉',
+               'address': '哈尔滨市南岗区入和街75暑5单元61户', 'error': 0}
+
+    dataq = miser_encode(resdata)
+    print(dataq)

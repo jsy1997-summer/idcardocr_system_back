@@ -2,6 +2,7 @@
 import base64
 import os
 import sys
+import time
 
 import django as django
 import numpy as np
@@ -25,7 +26,7 @@ fir_head = 0
 # 第二个序列的起始位置
 sec_head = 0
 # 密文的长度
-cip_length = 0
+cip_length = 688
 
 
 class S(BaseHTTPRequestHandler):
@@ -83,8 +84,7 @@ def get_data(request):
         global fir_head, sec_head, cip_length
         fir_head = body.get('fir_head')
         sec_head = body.get('sec_head')
-        cip_length = body.get('cip_length')
-        print(body)
+        # print(body)
 
         return HttpResponse("200 ok!")
 
@@ -94,31 +94,42 @@ def idcard_ocr(request):
         response.status_code = 200
         return HttpResponse("200")
     if request.method == "POST":
-        data = miser_decode(fir_head, sec_head, cip_length, image_encryptdata)
-        print(data)
+        t1 = round(time.time()*1000)
+        img = miser_decode(fir_head, sec_head, image_encryptdata)  # 前端传过来的加密数据的解密过程
+        t2 = round(time.time()*1000)
+        print("解密的时间是%d", (t2-t1))
         # body = request.body
         # body = json.loads(body)
-        # img = body.get('img_base64')
-        # img = img.split(",")[1]
-        # format_img = base64.b64decode(img)  # base64解码
-        # file = open('idcard_ocr/testimages/change.jpg', "wb")
-        # file.write(format_img)
-        # file.close()
-        # image = "idcard_ocr/testimages/change.jpg"
+        img = img.split(",")[1]
 
-        image = "idcard_ocr/testimages/1.jpg"
+        format_img = base64.b64decode(img)  # base64解码
+        file = open('idcard_ocr/testimages/change.jpg', "wb")
+        file.write(format_img)
+        file.close()
+        image = "idcard_ocr/testimages/change.jpg"
+
+        # image = "idcard_ocr/testimages/1.jpg"
         result = process(image)
-        print(type(result))
-        res = json.dumps(result)
-        res = bytes(res, encoding="utf8")
-        endata = encode(res)
-        endata = base64.b64encode(endata)
-        # endata = parse.quote(endata)
-        print("加密的结果是")
-        print(endata)
 
-        # return HttpResponse(json.dumps(result, ensure_ascii=False), content_type="application/json,charset=utf-8")
-        return HttpResponse(endata)
+        #  从这个位置开始自己的加密，得到双引号括起来的dict
+        # res = json.dumps(result)  # 转换为json格式，这样才能使得属性是双引号，然后才能转换为str格式
+        # res = bytes(res, encoding="utf8")  # 转换为bytes格式，否则encode无法接受
+        # endata = encode(res)
+        # endata = base64.b64encode(endata)
+        # endata = parse.quote(endata)
+        t3 = round(time.time()*1000)
+        f, s, endata = miser_encode(result)
+        t4 = round(time.time()*1000)
+        print("加密的时间是%d", (t4-t3))
+        res = {
+            "fir": f,
+            "sec": s,
+            "cip_all": endata,
+        }
+        # print(res)
+
+        return HttpResponse(json.dumps(res, ensure_ascii=False), content_type="text/html,charset=utf-8")
+        # return HttpResponse(res)
 
 
 if __name__ == "__main__":
