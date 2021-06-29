@@ -68,12 +68,15 @@ def miser_decode(at, bt, endata):
     b = max(at, bt)  # 选择b为较大的数值
     # 加密部分截取出来 688为加密部分的密文的长度
     cip = endata[a:a + 688]
+    print(a)
+    print(b)
+
 
     # 还原密文的原来的顺序
     cip = cip[0:b - a] + cip[-(a + b):-1] + cip[-1] + cip[b - a:-(a + b)]
     # cip1l = 0.5 * len(cip)=344 固定长度
     fir_sep = cip[0:344]
-    sec_sep = cip[344:-1] + cip[-1]
+    sec_sep = cip[344:]
     # 两个序列进行解密
     fir_sep = decode(fir_sep)
     sec_sep = decode(sec_sep)
@@ -96,7 +99,7 @@ def miser_encode(res_data):
     sec = random.randint(fir, 30)  # 第二个序列的起始位置
     fir_seq = res_data[fir:fir + 50]  # 截取长度为50的明文串为第一个序列
     sec_seq = res_data[sec:sec + 50]  # 截取长度为50的明文串为第二个序列
-    res1 = json.dumps(fir_seq)  # 转换为json格式，这样才能使得属性是双引号，然后才能转换为str格式
+    res1 = json.dumps(fir_seq)  # 转换为json格式，
     res1 = bytes(res1, encoding="utf8")  # 转换为bytes格式，否则encode无法接受
     res2 = json.dumps(sec_seq)
     res2 = bytes(res2, encoding="utf8")

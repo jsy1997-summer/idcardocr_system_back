@@ -1,3 +1,4 @@
+import base64
 import json
 import time
 
@@ -21,7 +22,20 @@ def register(request):
         # postBody = eval(str(request.body, encoding='utf-8'))
         username = body.get('user_name')
         upassword = body.get('user_password')
-        data = UserInfo(name=username, password=upassword)  # 填写多个字段的数据
+        image = body.get('user_image')
+        image = image.split(",")[1]
+        format_img = base64.b64decode(image)  # base64解码
+        file = open('E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg', "wb")
+        file.write(format_img)
+        file.close()
+        # with open('E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg', "rb") as f:
+        #     img = f.read()
+        #
+        # image = base64.b64encode(img)
+        # print(image)
+        image_url = 'E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg'  # 头像存储的是在前端的额相对路径
+
+        data = UserInfo(name=username, password=upassword, image=image_url)  # 填写多个字段的数据
         data.save()  # 完成操作
         return HttpResponse("200")
 
@@ -37,6 +51,12 @@ def login(request):
         username = body.get('user_name')
         person = UserInfo.objects.get(name=username)
         password = person.password
+        # image_url = person.image
+        # res = {
+        #     "password": password,
+        #     "url": image_url,
+        # }
+        # return HttpResponse(json.dumps(res, ensure_ascii=False), content_type="text/html,charset=utf-8")
         return HttpResponse(password)
 
 
