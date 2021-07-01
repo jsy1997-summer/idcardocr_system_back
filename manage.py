@@ -89,15 +89,16 @@ def get_data(request):
         return HttpResponse("200 ok!")
 
 
+# 信息加密识别
 def idcard_ocr(request):
     if request.method == "OPTIONS":
         response.status_code = 200
         return HttpResponse("200")
     if request.method == "POST":
-        t1 = round(time.time()*1000)
+        t1 = round(time.time() * 1000)
         img = miser_decode(fir_head, sec_head, image_encryptdata)  # 前端传过来的加密数据的解密过程
-        t2 = round(time.time()*1000)
-        print("解密的时间是%d", (t2-t1))
+        t2 = round(time.time() * 1000)
+        print("解密的时间是%d", (t2 - t1))
         # body = request.body
         # body = json.loads(body)
         img = img.split(",")[1]
@@ -108,19 +109,12 @@ def idcard_ocr(request):
         file.close()
         image = "idcard_ocr/testimages/change.jpg"
 
-        # image = "idcard_ocr/testimages/1.jpg"
         result = process(image)
 
-        #  从这个位置开始自己的加密，得到双引号括起来的dict
-        # res = json.dumps(result)  # 转换为json格式，这样才能使得属性是双引号，然后才能转换为str格式
-        # res = bytes(res, encoding="utf8")  # 转换为bytes格式，否则encode无法接受
-        # endata = encode(res)
-        # endata = base64.b64encode(endata)
-        # endata = parse.quote(endata)
-        t3 = round(time.time()*1000)
+        t3 = round(time.time() * 1000)
         f, s, endata = miser_encode(result)
-        t4 = round(time.time()*1000)
-        print("加密的时间是%d", (t4-t3))
+        t4 = round(time.time() * 1000)
+        print("加密的时间是%d", (t4 - t3))
         res = {
             "fir": f,
             "sec": s,
@@ -130,6 +124,38 @@ def idcard_ocr(request):
 
         return HttpResponse(json.dumps(res, ensure_ascii=False), content_type="text/html,charset=utf-8")
         # return HttpResponse(res)
+
+
+# 信息不加密直接识别
+def card_ocr(request):
+    if request.method == "OPTIONS":
+        response.status_code = 200
+        return HttpResponse("200")
+    if request.method == "POST":
+        body = request.body
+        body = json.loads(body)
+        img = body.get("img_base64")
+
+        eg1 = CardRecognition()
+        result = eg1.nocode_reg(img)
+
+        return HttpResponse(json.dumps(result, ensure_ascii=False), content_type="text/html,charset=utf-8")
+
+
+class CardRecognition:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def nocode_reg(image):
+        img = image.split(",")[1]
+        img = base64.b64decode(img)
+        file = open('idcard_ocr/testimages/change.jpg', "wb")
+        file.write(img)
+        file.close()
+        image = "idcard_ocr/testimages/change.jpg"
+        result = process(image)
+        return result
 
 
 if __name__ == "__main__":

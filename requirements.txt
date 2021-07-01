@@ -11,3 +11,4 @@ ujson~=1.35
 pymysql~=1.0.2
 rsa~=3.4.2
 demjson~=2.2.4
+requests~=2.23.0

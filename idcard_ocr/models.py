@@ -11,3 +11,8 @@ class UserInfo(models.Model):
     password = models.CharField(max_length=30)
 
     image = models.CharField(max_length=100, default="")
+
+
+class RegistInfo(models.Model):
+    idnum = models.CharField(max_length=20, primary_key=True)
+    path = models.CharField(max_length=50)
