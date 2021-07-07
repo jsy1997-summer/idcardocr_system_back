@@ -9,7 +9,7 @@ import re
 # import matplotlib.pyplot as plt
 import matplotlib.image as imashow
 
-from idcard_ocr.method import idcard_recognize
+from idcard_ocr.method import idcard_recognize, findidcard
 
 from pyocr.libtesseract import tesseract_raw
 
@@ -30,10 +30,12 @@ def idcardocr(imgname, handle, handle_num, mode=1):
         result_dict = dict()
 
         name_pic = find_name(img_data_gray, img_org)  # name_pic得到名字图片
+
         # t3 = round(time.time() * 1000)
         result_dict['name'] = get_name(name_pic, handle)
         # t4 = round(time.time() * 1000)
         # print(u'名字2耗时:%s' % (t4 - t3))
+
 
         idnum_pic = find_idnum(img_data_gray, img_org)
         new_id, new_birth = get_idnum_and_birth(idnum_pic, handle_num);
@@ -156,7 +158,8 @@ def img_resize_gray(imgorg):
 
 
 def find_name(crop_gray, crop_org):
-    template = cv2.UMat(cv2.imread('idcard_ocr/mask_img/name_mask_%s.jpg' % pixel_x, 0))  # template 得到姓名图片
+    # template = cv2.UMat(cv2.imread('idcard_ocr/mask_img/name_mask_%s.jpg' % pixel_x, 0))
+    template = cv2.UMat(cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/name_mask_%s.jpg' % pixel_x, 0))  # template 得到姓名图片
     w, h = cv2.UMat.get(template).shape[::-1]
     res = cv2.matchTemplate(crop_gray, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -186,7 +189,7 @@ def find_sex(crop_gray, crop_org):
 
 
 def find_nation(crop_gray, crop_org):
-    template = cv2.UMat(cv2.imread('idcard_ocr/mask_img/nation_mask_%s.jpg' % pixel_x, 0))
+    template = cv2.UMat(cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/nation_mask_%s.jpg' % pixel_x, 0))
     w, h = cv2.UMat.get(template).shape[::-1]
     res = cv2.matchTemplate(crop_gray, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -246,7 +249,7 @@ def find_nation(crop_gray, crop_org):
 #         return cv2.UMat(year), cv2.UMat(month), cv2.UMat(day)
 
 def find_address(crop_gray, crop_org):
-    template = cv2.UMat(cv2.imread('idcard_ocr/mask_img/address_mask_%s.jpg' % pixel_x, 0))
+    template = cv2.UMat(cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/address_mask_%s.jpg' % pixel_x, 0))
     w, h = cv2.UMat.get(template).shape[::-1]
 
     img_w, img_h = cv2.UMat.get(crop_gray).shape[::-1]
@@ -272,7 +275,7 @@ def find_address(crop_gray, crop_org):
 
 
 def find_idnum(crop_gray, crop_org):
-    template = cv2.UMat(cv2.imread('idcard_ocr/mask_img/idnum_mask_%s.jpg' % pixel_x, 0))
+    template = cv2.UMat(cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/idnum_mask_%s.jpg' % pixel_x, 0))
     # showimg(template)
     # showimg(crop_gray)
     w, h = cv2.UMat.get(template).shape[::-1]
@@ -579,9 +582,9 @@ def get_result_vary_length(red, handle, langset, org_img, custom_config=''):
 
     image2 = cv2.UMat.get(red_org)[y - 10:y + h + 10, x - 10:x + w + 10]
 
-    imashow.imsave('idcard_ocr/testimages/ttest.jpg', image2)
+    imashow.imsave('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/ttest.jpg', image2)
 
-    image2 = Image.open('idcard_ocr/testimages/ttest.jpg')
+    image2 = Image.open('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/ttest.jpg')
     tesseract_raw.set_image(handle, image2)
     result_string = tesseract_raw.get_utf8_text(handle)
 
@@ -661,4 +664,10 @@ if __name__ == "__main__":
     # idcard_recognize.process('testimages/5.jpg')
     handle = tesseract_raw.init(lang='chi_sim')
     handle_num = tesseract_raw.init(lang='eng')
-    print(idcard_recognize.process('idcard_ocr/testimages/light1.jpg'))
+    path = r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/rotate0.jpg'
+    # idcard_recognize.process(path)
+    idfind = findidcard.Findidcard()
+    idcard_img = idfind.find(path)  # 对图像进行校正处理
+    # cv2.imshow('dd', idcard_img)
+    # cv2.waitKey()
+    result = idcardocr(idcard_img, handle, handle_num)

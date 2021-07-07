@@ -15,7 +15,7 @@ handle_num = tesseract_raw.init(lang="eng")
 def process(img_name):
     try:
         idfind = findidcard.Findidcard()
-        idcard_img = idfind.find(img_name)
+        idcard_img = idfind.find(img_name)  # 对图像进行校正处理
 
         # showing(idcard_img)
         # result_dict = unit_test.idcardocr(idcard_img,handle,handle_num,1)

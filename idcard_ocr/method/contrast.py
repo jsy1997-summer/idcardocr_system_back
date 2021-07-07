@@ -1,7 +1,10 @@
 import base64
 import json
+import os
+import sys
 from urllib import parse
 
+import django
 import requests
 from django.http import HttpResponse, response
 import manage
@@ -52,15 +55,41 @@ class FaceContrast:
 
     # 判断是否为同一个人
     def judge(self, card_img0, live_img0):
+        # 预处理身份证图片  直接读取的
+        card_img0 = base64.b64encode(card_img0)  # 转换为base64格式
+        card_img0 = str(card_img0)
+        card_img0 = card_img0.split("'")[1]
+
+        # 预处理抓拍照片  前端传来的
+        # live_img0 = base64.b64encode(live_img0)
+        # live_img0 = str(live_img0)
+        live_img0 = live_img0.split(",")[1]
+
+        result = self.face_comp(card_img0, live_img0)
+        result = result['result']
+
+        if result is None:
+            # tip = "未能检测出任何结果，请摆正坐姿"
+            tip = "没检测出来 >_<"
+        else:
+            score = result['score']
+            if score >= 80:
+                tip = "是同一个人呢"
+            else:
+                tip = "不是同一个人，你是替考的吧"
+        return tip
+
+    # 本地图片调用测试
+    def test(self, card_img0, live_img0):
         # 预处理身份证图片
         card_img0 = base64.b64encode(card_img0)  # 转换为base64格式
         card_img0 = str(card_img0)
         card_img0 = card_img0.split("'")[1]
 
         # 预处理抓拍照片
-        # live_img0 = base64.b64encode(live_img0)
-        # live_img0 = str(live_img0)
-        live_img0 = live_img0.split(",")[1]
+        live_img0 = base64.b64encode(live_img0)
+        live_img0 = str(live_img0)
+        card_img0 = card_img0.split("'")[1]
 
         result = self.face_comp(card_img0, live_img0)
         result = result['result']
@@ -138,16 +167,21 @@ def contrast(request):
 
 
 if __name__ == "__main__":
-    one = FaceContrast()
-    with open('E:/myvue/contrast_image/card.txt', 'r') as f:
-        card_image = f.read()
-    with open('E:/myvue/contrast_image/live.txt', 'r') as f:
-        live_image = f.read()
+    # BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 定位到django根目录
+    # sys.path.append(os.path.abspath(os.path.join(BASE_DIR, os.pardir)))
+    # os.environ.setdefault("DJANGO_SETTINGS_MODULE", "IDcard_recog.settings")  # django的settings文件
+    # django.setup()
 
-    # with open('E:/myvue/contrast_image/white_jsy.jpg', 'rb') as f:
+    one = FaceContrast()
+    # with open('E:/myvue/contrast_image/card.txt', 'r') as f:
     #     card_image = f.read()
-    # with open('E:/myvue/contrast_image/white_jsy.jpg', 'rb') as f:
+    # with open('E:/myvue/contrast_image/live.txt', 'r') as f:
     #     live_image = f.read()
 
-    res = one.judge(card_image, live_image)
+    with open('E:/myvue/contrast_image/142822197603200075.jpg.jpg', 'rb') as f:
+        card_image = f.read()
+    with open('E:/myvue/contrast_image/white_jsy.jpg', 'rb') as f:
+        live_image = f.read()
+
+    res = one.test(card_image, live_image)
     print(res)

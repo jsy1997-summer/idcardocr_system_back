@@ -52,7 +52,7 @@ def encode(rsa_data):
 
 # RSA解密
 def decode(en_data):
-    en_data = parse.unquote(en_data)
+    en_data =  (en_data)
     en_data = base64.b64decode(en_data)
     private_key = RSA.import_key(open("rsa_private_key.bin").read())
     prikey = PKCS1_v1_5.new(private_key)
@@ -122,8 +122,7 @@ if __name__ == '__main__':
     # data = miser_decode(a1, b1, endata1)
     # print(data)
     # miser加密测试
-    resdata = {'name': '张志学', 'sex': '男', 'idnum': '230103198602230916', 'birth': '19860223', 'nation': '汉',
-               'address': '哈尔滨市南岗区入和街75暑5单元61户', 'error': 0}
+    resdata = {'name': '李白', 'sex': '男', 'idnum': '142822197603200075', 'birth': '19760320', 'nation': '汉', 'address': '四川省成都市青羊区二环高架路', 'error': 0}
 
     dataq = miser_encode(resdata)
     print(dataq)
