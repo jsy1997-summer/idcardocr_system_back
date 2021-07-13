@@ -19,7 +19,7 @@ from django.urls import re_path, path
 
 import manage
 from idcard_ocr import views
-from idcard_ocr.method import en_de_code
+from idcard_ocr.method import en_de_code, secverify
 from idcard_ocr.method import contrast
 
 urlpatterns = [
@@ -37,6 +37,7 @@ urlpatterns = [
     path('senddata/', manage.get_data),  # 后端得到前端发送过来的加密之后的数据并且保存在内存中
     path('contrast/', contrast.get_image),  # 后端得到前端发送过的头像数据并验证是否为同一个人
     path('contrast_login/', contrast.login),  # 前端对比的页面登录的时候从后端得到身份证图片
-    path('compare/', contrast.contrast)  # 接收前端传来的拍照信息并返回结果
+    path('compare/', contrast.contrast),  # 接收前端传来的拍照信息并返回结果
+    path('verify/', secverify.verify),  # 返回身份证真伪验证结果
 
 ]

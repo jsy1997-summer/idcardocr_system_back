@@ -142,6 +142,7 @@ def card_ocr(request):
         return HttpResponse(json.dumps(result, ensure_ascii=False), content_type="text/html,charset=utf-8")
 
 
+# 信息不加密直接识别
 class CardRecognition:
     def __init__(self):
         pass
