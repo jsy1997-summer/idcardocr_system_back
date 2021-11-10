@@ -9,15 +9,13 @@ import numpy as np
 
 from bottle import response
 
-from idcard_ocr.method.idcard_recognize import *
+
 # from django.shortcuts import HttpResponse
 from idcard_ocr.method.en_de_code import *
+from idcard_ocr.method import idcard_recognize
+
 
 from django.http import HttpResponse, response
-
-# SocketServer.ForkingMixIn, SocketServer.ThreadingMixIn
-# class ForkingServer(socketserver.ThreadingMixIn, HTTPServer):
-#     pass
 
 # 定义全局变量，用于存放图像加密之后的数据
 image_encryptdata = ""
@@ -27,48 +25,6 @@ fir_head = 0
 sec_head = 0
 # 密文的长度
 cip_length = 688
-
-
-class S(BaseHTTPRequestHandler):
-    def _set_headers(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        # self.end_headers()
-
-    def do_GET(self):
-        self._set_headers()
-        # self.wfile.write("<html><body><h1>hi!</h1></body></html>")
-        # result = process(pic)
-
-    def do_HEAD(self):
-        self._set_headers()
-
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
-        post_data = self.rfile.read(content_length)  # <--- Gets the data itself
-        post_data = post_data.split(b'\r\n')  # 分割信字节流信息
-        post_data = post_data[1].split(b';')  # 再次分割
-        filename = post_data[2]  # filename信息字节   再转化为str
-        filename = bytes.decode(filename)  # 字节流转换为str
-        filename = filename[11:-1]  # 得到名字
-        pic = "tmp/%s" % filename
-        # print(pic)
-        result = process(pic)
-        # print result
-        self._set_headers()
-        self.send_header("Content-Length", str(len(json.dumps(result).encode('utf-8'))))
-        self.end_headers()
-        self.wfile.write(json.dumps(result).encode('utf-8'))
-        # 发送消息
-
-
-def http_server(server_class=ForkingServer, handler_class=S, port=8080):
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    cv2.ocl.setUseOpenCL(True)
-    print('Starting httpd...')
-    print(u"是否启用OpenCL：%s" % cv2.ocl.useOpenCL())
-    httpd.serve_forever()
 
 
 # 获取数据的接口，把前端得到的加密过后的图像数据放在内存里面
@@ -97,6 +53,7 @@ def idcard_ocr(request):
     if request.method == "POST":
         t1 = round(time.time() * 1000)
         img = miser_decode(fir_head, sec_head, image_encryptdata)  # 前端传过来的加密数据的解密过程
+
         t2 = round(time.time() * 1000)
         print("解密的时间是%d", (t2 - t1))
         # body = request.body
@@ -108,9 +65,8 @@ def idcard_ocr(request):
         file.write(format_img)
         file.close()
         image = "idcard_ocr/testimages/change.jpg"
-
-        result = process(image)
-
+        idcardpro = idcard_recognize.Process()
+        result = idcardpro.process(image)
         t3 = round(time.time() * 1000)
         f, s, endata = miser_encode(result)
         t4 = round(time.time() * 1000)
@@ -155,7 +111,8 @@ class CardRecognition:
         file.write(img)
         file.close()
         image = "idcard_ocr/testimages/change.jpg"
-        result = process(image)
+        idcardpro = idcard_recognize.Process()
+        result = idcardpro.process(image)
         return result
 
 

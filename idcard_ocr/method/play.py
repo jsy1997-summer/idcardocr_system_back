@@ -1,0 +1,92 @@
+import base64
+
+import cv2
+
+block = open('C:/Users/dell/Desktop/block.txt', 'r')
+block = block.read()
+block = base64.b64decode(block)
+
+wei = open('C:/Users/dell/Desktop/wei.txt', 'r')
+wei = wei.read()
+wei = base64.b64decode(wei)
+
+
+lan = open('C:/Users/dell/Desktop/lan.txt', 'r')
+lan = lan.read()
+lan = base64.b64decode(lan)
+
+love = open('C:/Users/dell/Desktop/all.txt', 'r')
+love = love.read()
+love = base64.b64decode(love)
+
+# 初始化
+file = open('C:/Users/dell/Desktop/play/1.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/2.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/3.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/4.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/6.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/7.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/8.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/9.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/5.JPG', 'wb')
+file.write(block)
+file.close()
+cv2.waitKey(5000)
+
+file = open('C:/Users/dell/Desktop/play/1.JPG', 'wb')
+file.write(wei)
+file = open('C:/Users/dell/Desktop/play/9.JPG', 'wb')
+file.write(lan)
+file.close()
+cv2.waitKey(2000)
+
+
+file = open('C:/Users/dell/Desktop/play/1.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/2.JPG', 'wb')
+file.write(wei)
+file = open('C:/Users/dell/Desktop/play/9.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/8.JPG', 'wb')
+file.write(lan)
+file.close()
+cv2.waitKey(2000)
+
+
+file = open('C:/Users/dell/Desktop/play/2.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/3.JPG', 'wb')
+file.write(wei)
+file = open('C:/Users/dell/Desktop/play/8.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/7.JPG', 'wb')
+file.write(lan)
+file.close()
+cv2.waitKey(2000)
+
+file = open('C:/Users/dell/Desktop/play/3.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/4.JPG', 'wb')
+file.write(wei)
+file = open('C:/Users/dell/Desktop/play/7.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/6.JPG', 'wb')
+file.write(lan)
+file.close()
+cv2.waitKey(2000)
+
+file = open('C:/Users/dell/Desktop/play/4.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/6.JPG', 'wb')
+file.write(block)
+file = open('C:/Users/dell/Desktop/play/5.JPG', 'wb')
+file.write(love)
+file.close()

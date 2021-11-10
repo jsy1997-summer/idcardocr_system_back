@@ -3,29 +3,36 @@
 
 from idcard_ocr.method import idcardocr
 from idcard_ocr.method import findidcard
+from idcard_ocr.method import idcard_recognize
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import socketserver
 import cv2
 from pyocr.libtesseract import tesseract_raw
+
 handle = tesseract_raw.init(lang="chi_sim")
 handle_num = tesseract_raw.init(lang="eng")
 
 
-def process(img_name):
-    try:
-        idfind = findidcard.Findidcard()
-        idcard_img = idfind.find(img_name)  # 对图像进行校正处理
+class Process:
+    def __init__(self):
+        pass
 
-        # showing(idcard_img)
-        # result_dict = unit_test.idcardocr(idcard_img,handle,handle_num,1)
+    @staticmethod
+    def process(img_name):
+        try:
+            idfind = findidcard.Findidcard()
+            idcard_img = idfind.find(img_name)  # 对图像进行校正处理
 
-        result_dict = idcardocr.idcardocr(idcard_img, handle, handle_num, 1)
-        result_dict['error'] = 0
-    except Exception as e:
-        result_dict = {'error': 1}
-        print(e)
-    return result_dict
+            # showing(idcard_img)
+            # result_dict = unit_test.idcardocr(idcard_img,handle,handle_num,1)
+
+            result_dict = idcardocr.idcardocr(idcard_img, handle, handle_num, 1)
+            result_dict['error'] = 0
+        except Exception as e:
+            result_dict = {'error': 1}
+            print(e)
+        return result_dict
 
 
 def showing(img):
@@ -64,10 +71,12 @@ class S(BaseHTTPRequestHandler):
         filename = filename[11:-1]  # 得到名字
         pic = "tmp/%s" % filename
         # print(pic)
-        result = process(pic)
+        idcard = idcard_recognize.Process()
+        result1 = idcard.process(pic)
+
         # print result
         self._set_headers()
-        self.send_header("Content-Length", str(len(json.dumps(result).encode('utf-8'))))
+        self.send_header("Content-Length", str(len(json.dumps(result1).encode('utf-8'))))
         self.end_headers()
         self.wfile.write(json.dumps(result).encode('utf-8'))
         # 发送消息
@@ -86,4 +95,6 @@ def http_server(server_class=ForkingServer, handler_class=S, port=8080):
 # 本模块被执行的时候，__name__=="__main__",被其他模块import的时候，__name__=="idcard_recognize"(文件名)
 if __name__ == "__main__":
     # http_server()
-    process('idcard_ocr/testimages/1.jpg')
+    idcardpro = idcard_recognize.Process()
+    result = idcardpro.process('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/2.jpg')
+

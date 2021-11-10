@@ -74,7 +74,7 @@ class FaceContrast:
         else:
             score = result['score']
             if score >= 80:
-                tip = "不是同一个人，有替考嫌疑"
+                tip = "是同一个人"
             else:
                 tip = "不是同一个人，有替考嫌疑"
         return tip

@@ -12,7 +12,6 @@ class Findidcard:
     def find(self, img2_name):
         print(u'进入身份证模版匹配流程...')
         t1 = round(time.time() * 1000)
-        # img1_name = 'idcard_ocr/mask_img/idcard_mask.jpg'
         img1_name = r"E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/idcard_mask.jpg"
         MIN_MATCH_COUNT = 10
         # imagetest = cv2.imread(img1_name, 0)
@@ -80,7 +79,7 @@ class Findidcard:
 
             # 用HomoGraphy计算图像与图像之间映射关系, M为转换矩阵
             M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)  # 计算多个二维点对之间的最优单映射变换矩阵 H（3行x3列）
-            print(M)
+            # print(M)
             matchesMask = mask.ravel().tolist()
 
             # 使用转换矩阵M计算出img1在img2的对应形状

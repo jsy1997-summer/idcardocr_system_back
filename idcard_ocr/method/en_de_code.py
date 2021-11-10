@@ -52,7 +52,7 @@ def encode(rsa_data):
 
 # RSA解密
 def decode(en_data):
-    en_data =  (en_data)
+    en_data = (en_data)
     en_data = base64.b64decode(en_data)
     private_key = RSA.import_key(open("rsa_private_key.bin").read())
     prikey = PKCS1_v1_5.new(private_key)
@@ -70,7 +70,6 @@ def miser_decode(at, bt, endata):
     cip = endata[a:a + 688]
     print(a)
     print(b)
-
 
     # 还原密文的原来的顺序
     cip = cip[0:b - a] + cip[-(a + b):-1] + cip[-1] + cip[b - a:-(a + b)]
@@ -122,7 +121,8 @@ if __name__ == '__main__':
     # data = miser_decode(a1, b1, endata1)
     # print(data)
     # miser加密测试
-    resdata = {'name': '李白', 'sex': '男', 'idnum': '142822197603200075', 'birth': '19760320', 'nation': '汉', 'address': '四川省成都市青羊区二环高架路', 'error': 0}
+    resdata = {'name': '李白', 'sex': '男', 'idnum': '142822197603200075', 'birth': '19760320', 'nation': '汉',
+               'address': '四川省成都市青羊区二环高架路', 'error': 0}
 
     dataq = miser_encode(resdata)
     print(dataq)
