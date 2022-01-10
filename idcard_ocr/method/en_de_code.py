@@ -52,7 +52,7 @@ def encode(rsa_data):
 
 # RSA解密
 def decode(en_data):
-    en_data = (en_data)
+    # en_data = en_data
     en_data = base64.b64decode(en_data)
     private_key = RSA.import_key(open("rsa_private_key.bin").read())
     prikey = PKCS1_v1_5.new(private_key)
@@ -68,8 +68,8 @@ def miser_decode(at, bt, endata):
     b = max(at, bt)  # 选择b为较大的数值
     # 加密部分截取出来 688为加密部分的密文的长度
     cip = endata[a:a + 688]
-    print(a)
-    print(b)
+    # print(a)
+    # print(b)
 
     # 还原密文的原来的顺序
     cip = cip[0:b - a] + cip[-(a + b):-1] + cip[-1] + cip[b - a:-(a + b)]

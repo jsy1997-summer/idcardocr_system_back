@@ -6,12 +6,14 @@ from django.shortcuts import render
 
 # Create your views here.
 
-from idcard_ocr.models import UserInfo
+from idcard_ocr.models import UserInfo, RegistInfo
 from django.http import HttpResponse, response
 from django.http import JsonResponse
 
-
 # 用户注册
+from manage import CardRecognition
+
+
 def register(request):
     if request.method == "OPTIONS":
         response.status_code = 200
@@ -25,7 +27,7 @@ def register(request):
         image = body.get('user_image')
         image = image.split(",")[1]
         format_img = base64.b64decode(image)  # base64解码
-        file = open('E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg', "wb")
+        file = open('E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/' + username + '.jpg', "wb")
         file.write(format_img)
         file.close()
         # with open('E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg', "rb") as f:
@@ -33,7 +35,7 @@ def register(request):
         #
         # image = base64.b64encode(img)
         # print(image)
-        image_url = 'E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/'+username+'.jpg'  # 头像存储的是在前端的额相对路径
+        image_url = 'E:/myvue/my_idcard_system/idcardocr_system_front/src/assets/' + username + '.jpg'  # 头像存储的是在前端的额相对路径
 
         data = UserInfo(name=username, password=upassword, image=image_url)  # 填写多个字段的数据
         data.save()  # 完成操作
@@ -114,3 +116,25 @@ def idcardInfoExport(request):
         file = open(export_path, mode='w')
         file.write(info)
         return HttpResponse(export_path)
+
+
+# 身份信息验证接口
+def info_verify(request):
+    if request.method == "OPTIONS":
+        response.status_code = 200
+        return HttpResponse("200")
+    if request.method == "POST":
+        body = request.body
+        body = json.loads(body)
+        img = body.get("img_base64")
+
+        eg1 = CardRecognition()
+        result = eg1.nocode_reg(img)
+
+        cardid = result["idnum"]
+        person = RegistInfo.objects.get(idnum=cardid)
+        admit_id = person.admit_id
+        print(admit_id)
+        result["admit_id"] = admit_id  # 存储准考证号码，设定的是id的后8位
+
+        return HttpResponse(json.dumps(result, ensure_ascii=False), content_type="text/html,charset=utf-8")

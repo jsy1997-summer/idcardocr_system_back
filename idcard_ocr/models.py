@@ -16,3 +16,5 @@ class UserInfo(models.Model):
 class RegistInfo(models.Model):
     idnum = models.CharField(max_length=20, primary_key=True)
     path = models.CharField(max_length=50)
+    # 准考证信息
+    admit_id = models.CharField(max_length=20)

@@ -39,5 +39,6 @@ urlpatterns = [
     path('contrast_login/', contrast.login),  # 前端对比的页面登录的时候从后端得到身份证图片
     path('compare/', contrast.contrast),  # 接收前端传来的拍照信息并返回结果
     path('verify/', secverify.verify),  # 返回身份证真伪验证结果
+    path('info_verify/', views.info_verify),  # 返回登录考试系统时身份验证结果
 
 ]

@@ -32,6 +32,7 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
         result_dict = dict()
 
         name_pic = find_name(img_data_gray, img_org)  # name_pic得到名字图片
+        cv2.imwrite("E:\\myvue\\name.jpg", name_pic)
 
         # t3 = round(time.time() * 1000)
         result_dict['name'] = get_name(name_pic, handle0)
@@ -55,11 +56,18 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
         # t6 = round(time.time() * 1000)
         # print(u'nation2耗时:%s' % (t6 - t5))
 
-        address_pic, firline_pic = find_address(img_data_gray, img_org)
+        # 地址整个识别
+        # address_pic, firline = find_address(img_data_gray, img_org)
+        # 测试单行识别
+        firline, secline = miser_findaddr(img_data_gray, img_org)
         # t7 = round(time.time() * 1000)
+        # cv2.imwrite("E:\\myvue\\addr.jpg", address_pic)
+        firsttext = get_address(firline, handle0)
+        sectext = get_address(secline, handle0)
 
-        result_dict['address'] = get_address(address_pic, handle0)
-        firline_text = get_address(firline_pic, handle0)
+        # result_dict['address'] = get_address(address_pic, handle0)
+        result_dict['address'] = str(firsttext) + str(sectext)
+        firline_text = get_address(firline, handle0)
         secverify.firline_text = firline_text
 
     elif mode == 0:
@@ -180,6 +188,48 @@ class Verify:
         cv2.waitKey(0)
 
 
+def miser_findaddr(crop_gray, crop_org):
+    template = cv2.UMat(
+        cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/address_mask_%s.jpg' % pixel_x, 0))
+    w, h = cv2.UMat.get(template).shape[::-1]
+    w = w + int(20)
+
+    img_w, img_h = cv2.UMat.get(crop_gray).shape[::-1]
+    crop_gray = cv2.UMat.get(crop_gray)[410:img_h, 0:img_w]
+    crop_org = cv2.UMat.get(crop_org)[410:img_h, 0:img_w]
+
+    res = cv2.matchTemplate(crop_gray, template, cv2.TM_CCORR_NORMED)
+
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)  # max_loc代表匹配度最高的点的坐标（该店坐标是top_left坐标）
+    top_left = (max_loc[0] + w, max_loc[1])  # 计算得到地址栏左上坐标
+    bottom_right = (top_left[0] + int(1660 * x), top_left[1] + int(700 * x))  # 计算得到地址栏右下坐标
+    addr_result = crop_org[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]  # 得到地址栏剪裁结果
+    # image_test=cv2.rectangle(template_image, top_left, bottom_right, 255,1)
+    # showing(image_test,"test")
+    # 身份证真伪验证——地址栏第一行11个字验证，剪切地址栏第一行，top_left的坐标已经有了，只需要计算地址栏第一行的 bottom_right
+    # 第一行结果
+    firline_bottom_right = (top_left[0] + int(1660 * x), top_left[1] + int(200 * x))
+    firline_result = crop_org[top_left[1]:firline_bottom_right[1], top_left[0]:firline_bottom_right[0]]  # 得到地址栏第一行剪裁结果
+    fir_img = cv2.UMat(firline_result)
+    cv2.imwrite("E:\\myvue\\first.jpg", fir_img)
+    # 第二行结果
+    secline_top_left = (max_loc[0] + w, top_left[1] + int(220 * x))
+    secline_bottom_right = (top_left[0] + int(1660 * x), secline_top_left[1] + int(200 * x))
+    secline_result = crop_org[secline_top_left[1]:secline_bottom_right[1], secline_top_left[0]:secline_bottom_right[0]]
+    sec_img = cv2.UMat(secline_result)
+    cv2.imwrite("E:\\myvue\\sec.jpg", sec_img)
+
+    # 第三行结果
+    thirdline_top_left = (max_loc[0] + w, secline_top_left[1] + int(220 * x))
+    thirdline_bottom_right = (top_left[0] + int(1660 * x), thirdline_top_left[1] + int(200 * x))
+    thirdline_result = crop_org[thirdline_top_left[1]:thirdline_bottom_right[1],
+                       thirdline_top_left[0]:thirdline_bottom_right[0]]
+    third_img = cv2.UMat(thirdline_result)
+    cv2.imwrite("E:\\myvue\\third.jpg", third_img)
+
+    return cv2.UMat(firline_result), cv2.UMat(secline_result)
+
+
 def generate_mask(x):
     name_mask_pic = cv2.UMat(cv2.imread('name_mask.jpg'))
     sex_mask_pic = cv2.UMat(cv2.imread('sex_mask.jpg'))
@@ -253,15 +303,17 @@ def find_name(crop_gray, crop_org):
         cv2.imread(r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/mask_img/name_mask_%s.jpg' % pixel_x,
                    0))  # template 得到姓名图片
     w, h = cv2.UMat.get(template).shape[::-1]
+    # 对“名字”两个字进行模板匹配，找到匹配坐标
     res = cv2.matchTemplate(crop_gray, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    # print(max_loc)
-    top_left = (max_loc[0] + w, max_loc[1] - int(20 * x))
-    bottom_right = (top_left[0] + int(700 * x), top_left[1] + int(300 * x))
-    result = cv2.UMat.get(crop_org)[top_left[1] - 10:bottom_right[1], top_left[0] - 10:bottom_right[0]]
+    # 计算名字内容的坐标点
+    top_left = (max_loc[0] + w, max_loc[1])
+    bottom_right = (top_left[0] + int(700 * x), top_left[1] + int(200 * x))
+    # 切割
+    result_name = cv2.UMat.get(crop_org)[top_left[1] - 10:bottom_right[1], top_left[0] - 10:bottom_right[0]]
     cv2.rectangle(crop_gray, top_left, bottom_right, 255, 2)
     # showimg(result)
-    return cv2.UMat(result)
+    return cv2.UMat(result_name)
 
 
 '''
@@ -369,6 +421,7 @@ def find_address(crop_gray, crop_org):
 
     # showing(addr_result, "addr_result")
     # cv2.imshow("result", addr_result)
+    # cv2.waitKey()
 
     return cv2.UMat(addr_result), cv2.UMat(firline_result)
 
@@ -425,9 +478,10 @@ def get_name(img, name_handle):
     # red1 = cv2.adaptiveThreshold(red, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 151, 50)#二值化
     red = cv2.adaptiveThreshold(red, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 151, 55)  # 二值化
     #    red = cv2.medianBlur(red, 3)
-    # red = img_resize(red, 150)#白底黑字调整大小
-    img = img_resize(img, 150)  # 原图调整大小（数字越小，细节更加明显）
+    red = img_resize(red, 300)  # 白底黑字调整大小
+    img = img_resize(img, 300)  # 原图调整大小（数字越小，细节更加明显）
     # showing(img, 'name-img')
+
     # showing(red1,'name-mean')
     # showing(red,'name-gaussian')
     name = get_result_vary_length(red, name_handle, 'chi_sim', img, '--psm 7')
@@ -748,7 +802,7 @@ def hist_equal(img):
 if __name__ == "__main__":
     handle = tesseract_raw.init(lang='chi_sim')
     handle_num = tesseract_raw.init(lang='eng')
-    path = r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/1.jpg'
+    path = r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/jsy.jpg'
     # idcard_recognize.process(path)
     idfind = findidcard.Findidcard()
     idcard_img = idfind.find(path)  # 对图像进行校正处理

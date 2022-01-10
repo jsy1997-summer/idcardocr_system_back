@@ -9,13 +9,13 @@ import numpy as np
 
 from bottle import response
 
-
 # from django.shortcuts import HttpResponse
 from idcard_ocr.method.en_de_code import *
 from idcard_ocr.method import idcard_recognize
 
-
 from django.http import HttpResponse, response
+
+# from idcard_ocr.models import RegistInfo
 
 # 定义全局变量，用于存放图像加密之后的数据
 image_encryptdata = ""
