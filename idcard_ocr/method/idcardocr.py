@@ -8,6 +8,7 @@ import re
 # import time
 # import matplotlib.pyplot as plt
 import matplotlib.image as imashow
+from pytesseract import pytesseract
 
 from idcard_ocr.method import idcard_recognize, findidcard, secverify
 
@@ -32,7 +33,7 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
         result_dict = dict()
 
         name_pic = find_name(img_data_gray, img_org)  # name_pic得到名字图片
-        cv2.imwrite("E:\\myvue\\name.jpg", name_pic)
+        # cv2.imwrite("E:\\myvue\\name.jpg", name_pic)
 
         # t3 = round(time.time() * 1000)
         result_dict['name'] = get_name(name_pic, handle0)
@@ -40,6 +41,7 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
         # print(u'名字2耗时:%s' % (t4 - t3))
 
         idnum_pic = find_idnum(img_data_gray, img_org)
+        # cv2.imwrite("E:\\myvue\\id.jpg", idnum_pic)
         new_id, new_birth = get_idnum_and_birth(idnum_pic, handle_num0)
 
         result_dict['sex'] = new_get_sex(new_id)
@@ -51,6 +53,7 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
         print(new_birth)
 
         nation_pic = find_nation(img_data_gray, img_org)
+        # cv2.imwrite("E:\\myvue\\nation.jpg", nation_pic)
         # t5 = round(time.time() * 1000)
         result_dict['nation'] = get_nation(nation_pic, handle0)
         # t6 = round(time.time() * 1000)
@@ -58,6 +61,7 @@ def idcardocr(imgname, handle0, handle_num0, mode=1):
 
         # 地址整个识别
         # address_pic, firline = find_address(img_data_gray, img_org)
+        # cv2.imwrite("E:\\myvue\\address.jpg", address_pic)
         # 测试单行识别
         firline, secline = miser_findaddr(img_data_gray, img_org)
         # t7 = round(time.time() * 1000)
@@ -208,7 +212,7 @@ def miser_findaddr(crop_gray, crop_org):
     # showing(image_test,"test")
     # 身份证真伪验证——地址栏第一行11个字验证，剪切地址栏第一行，top_left的坐标已经有了，只需要计算地址栏第一行的 bottom_right
     # 第一行结果
-    firline_bottom_right = (top_left[0] + int(1660 * x), top_left[1] + int(200 * x))
+    firline_bottom_right = (top_left[0] + int(1660 * x), top_left[1] + int(210 * x))
     firline_result = crop_org[top_left[1]:firline_bottom_right[1], top_left[0]:firline_bottom_right[0]]  # 得到地址栏第一行剪裁结果
     fir_img = cv2.UMat(firline_result)
     cv2.imwrite("E:\\myvue\\first.jpg", fir_img)
@@ -509,10 +513,11 @@ def get_address(img, addr_handle):
     # red=cv2.boxFilter(red, -1, (3, 3), normalize =1)#方框滤波，效果差
     # red=cv2.blur(red, (3, 3))#均值滤波
 
-    # showing(red,'red2')
     red = img_resize(red, 300)
     img = img_resize(img, 300)
-    address = punc_filter(get_result_vary_length(red, addr_handle, 'chi_sim', img, '--psm 6'))
+    # showing(red, 'red2')
+
+    address = punc_filter(get_addr_length(red, addr_handle))
     print(address)
     return address
     # return punc_filter(pytesseract.image_to_string(img, lang='chi_sim', config='-psm 3').replace(" ",""))
@@ -614,11 +619,13 @@ def get_idnum_and_birth(img, id_handle_num):
     red = hist_equal(red)
     red = cv2.adaptiveThreshold(red, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 151, 50)
     red = img_resize(red, 150)
+
     # cv2.imwrite('idnum_red.png', red)
     # idnum_str = get_result_fix_length(red, 18, 'idnum', '-psm 8')
     # idnum_str = get_result_fix_length(red, 18, 'eng', '--psm 8 ')
     img = Image.fromarray(cv2.UMat.get(red).astype('uint8'))
-    idnum_str = get_result_vary_length(red, id_handle_num, 'eng', img, '--psm 8 ')
+    # idnum_str = get_result_vary_length(red, id_handle_num, 'eng', img, '--psm 8 ')
+    idnum_str = get_id_length(red, id_handle_num)
     return idnum_str, idnum_str[6:14]
 
 
@@ -681,60 +688,128 @@ def get_result_fix_length(red, fix_handle, img, fix_length, langset, custom_conf
 def get_result_vary_length(red, vary_handle, langset, org_img, custom_config=''):
     # red:二值图片；langset：中文转换；org_img:原图；custom_config:转换模式
     red_org = red
-    # cv2.namedWindow("name", 0)
-    # cv2.imshow("name", red_org)
-    # cv2.waitKey(0)
+
     rec, red = cv2.threshold(red, 127, 255, cv2.THRESH_BINARY_INV)
     image, contours, hierarchy = cv2.findContours(red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
     # 描边一次可以减少噪点
     cv2.drawContours(red, contours, -1, (255, 255, 255), 1)
     # red=cv2.erode(red,np.ones((2,2),np.uint8),3)
     # color_img = cv2.cvtColor(red, cv2.COLOR_GRAY2BGR)
 
-    # numset_contours = []
-    height_list = []
-    width_list = []
-    for cnt in contours:
-        xx, y, w, h = cv2.boundingRect(cnt)
-        height_list.append(h)
-        # print(h,w)
-        width_list.append(w)
+    # 上一次程序 开始
+    # height_list = []
+    # width_list = []
+    # for cnt in contours:
+    #     xx, y, w, h = cv2.boundingRect(cnt)
+    #     height_list.append(h)
+    #     width_list.append(w)
+    #
+    # height_list.remove(max(height_list))
+    # width_list.remove(max(width_list))
+    # height_threshold = 0.21 * max(height_list)  # 原来的阈值是0.7去乘，但是阈值高导致有的字检测不到
+    # width_threshold = 1.4 * max(width_list)
+    # # print('height_threshold:'+str(height_threshold)+'width_threshold:'+str(width_threshold))
+    # big_rect = []
+    # for cnt in contours:
+    #     # print(cnt)
+    #     # area = cv2.contourArea(cnt)
+    #     # print("面积是：%s"%area)
+    #     xx, yy, w, h = cv2.boundingRect(cnt)
+    #     if h > height_threshold and w < width_threshold:  # 名字有几个字，就有几个符合条件（剔除一些噪声，保留字的结构）
+    #         # print(h,w)
+    #         # numset_contours.append((x, y, w, h))
+    #         big_rect.append((xx, yy))
+    #         big_rect.append((xx + w, yy + h))
+    #
+    # big_rect_nparray = np.array(big_rect, ndmin=3)  # 转换成为3维的
+    # xx, y, w, h = cv2.boundingRect(big_rect_nparray)
+    # image2 = cv2.UMat.get(red_org)[y - 10:y + h + 10, xx - 10:xx + w + 10]
+    # 上一次程序 开始
 
-    height_list.remove(max(height_list))
-    width_list.remove(max(width_list))
-    height_threshold = 0.21 * max(height_list)  # 原来的阈值是0.7去乘，但是阈值高导致有的字检测不到
-    width_threshold = 1.4 * max(width_list)
-    # print('height_threshold:'+str(height_threshold)+'width_threshold:'+str(width_threshold))
-    big_rect = []
+    rect = []
     for cnt in contours:
-        # print(cnt)
-        # area = cv2.contourArea(cnt)
-        # print("面积是：%s"%area)
         xx, yy, w, h = cv2.boundingRect(cnt)
-        if h > height_threshold and w < width_threshold:  # 名字有几个字，就有几个符合条件
-            # print(h,w)
-            # numset_contours.append((x, y, w, h))
-            big_rect.append((xx, yy))
-            big_rect.append((xx + w, yy + h))
+        rect.append((xx, yy))
+        rect.append((xx + w, yy + h))
+    rect_nparray = np.array(rect, ndmin=3)
+    x1, y1, w1, h1 = cv2.boundingRect(rect_nparray)
 
-    big_rect_nparray = np.array(big_rect, ndmin=3)  # 转换成为3维的
-
-    xx, y, w, h = cv2.boundingRect(big_rect_nparray)
-    # imgrect = cv2.rectangle(color_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    # imgrect = cv2.rectangle(red_org, (int(x), int(y)), (int(x + w), int(y + h)), (0, 255, 0), 2)
     # imgrect=cv2.erode(imgrect,np.ones((4,4),np.uint8),1)
     # showing(imgrect,'imgrect')
+    # imgrect = cv2.rectangle(red_org, (int(x1), int(y1)), (int(x1 + w1), int(y1 + h1)), (0, 255, 0), 2)
+    # imgrect = cv2.erode(imgrect, np.ones((4, 4), np.uint8), 1)
+    # showing(imgrect, 'imgrect1')
     result_string = ''
 
-    image2 = cv2.UMat.get(red_org)[y - 10:y + h + 10, xx - 10:xx + w + 10]
+    image2 = cv2.UMat.get(red_org)[y1 - 10:y1 + h1 + 10, x1 - 10:x1 + w1 + 10]
+    # image2 = cv2.UMat.get(red_org)
 
     imashow.imsave('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/ttest.jpg', image2)
 
     image2 = Image.open('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/ttest.jpg')
 
-    # cv2.namedWindow("识别输入", 0)
-    # cv2.imshow("识别输入", image2)
-    # cv2.waitKey()
+    tesseract_raw.set_image(vary_handle, image2)
+    result_string = tesseract_raw.get_utf8_text(vary_handle)
+    print(result_string)
+
+    return punc_filter(result_string)
+
+
+def get_id_length(red, vary_handle):
+    # red:二值图片；langset：中文转换；org_img:原图；custom_config:转换模式
+    red_org = red
+
+    rec, red = cv2.threshold(red, 127, 255, cv2.THRESH_BINARY_INV)
+    image, contours, hierarchy = cv2.findContours(red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # 描边一次可以减少噪点
+    cv2.drawContours(red, contours, -1, (255, 255, 255), 1)
+    rect = []
+    for cnt in contours:
+        xx, yy, w, h = cv2.boundingRect(cnt)
+        rect.append((xx, yy))
+        rect.append((xx + w, yy + h))
+    rect_nparray = np.array(rect, ndmin=3)
+    x1, y1, w1, h1 = cv2.boundingRect(rect_nparray)
+
+    image2 = cv2.UMat.get(red_org)[y1 - 10:y1 + h1 + 10, x1 - 10:x1 + w1 + 10]
+
+    imashow.imsave('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/idttest.jpg', image2)
+
+    image2 = Image.open('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/idttest.jpg')
+
+    # tesseract_raw.set_image(vary_handle, image2)
+    # result_string = tesseract_raw.get_utf8_text(vary_handle)
+    result_string = pytesseract.image_to_string(image2, lang='eng', config='--psm 7').replace(" ", "")
+    print(result_string)
+
+    return punc_filter(result_string)
+
+
+def get_addr_length(red, vary_handle):
+    # red:二值图片；langset：中文转换；org_img:原图；custom_config:转换模式
+    red_org = red
+
+    rec, red = cv2.threshold(red, 127, 255, cv2.THRESH_BINARY_INV)
+    image, contours, hierarchy = cv2.findContours(red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # 描边一次可以减少噪点
+    cv2.drawContours(red, contours, -1, (255, 255, 255), 1)
+
+    rect = []
+    for cnt in contours:
+        xx, yy, w, h = cv2.boundingRect(cnt)
+        rect.append((xx, yy))
+        rect.append((xx + w, yy + h))
+    rect_nparray = np.array(rect, ndmin=3)
+    x1, y1, w1, h1 = cv2.boundingRect(rect_nparray)
+
+    # image2 = cv2.UMat.get(red_org)[y1 - 10:y1 + h1 + 10, x1 - 10:x1 + w1 + 10]
+    image2 = cv2.UMat.get(red_org)
+
+    imashow.imsave('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/addrttest.jpg', image2)
+
+    image2 = Image.open('E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/addrttest.jpg')
+
     tesseract_raw.set_image(vary_handle, image2)
     result_string = tesseract_raw.get_utf8_text(vary_handle)
 
@@ -802,7 +877,7 @@ def hist_equal(img):
 if __name__ == "__main__":
     handle = tesseract_raw.init(lang='chi_sim')
     handle_num = tesseract_raw.init(lang='eng')
-    path = r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/jsy.jpg'
+    path = r'E:/myvue/IDcard_recog/idcardocr_system_back/idcard_ocr/testimages/15.jpg'
     # idcard_recognize.process(path)
     idfind = findidcard.Findidcard()
     idcard_img = idfind.find(path)  # 对图像进行校正处理

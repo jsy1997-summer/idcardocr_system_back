@@ -112,6 +112,67 @@ def miser_encode(res_data):
     return fir, sec, res_all
 
 
+# 性能测试
+def test_encode(request):
+    if request.method == "OPTIONS":
+        response.status_code = 200
+        return HttpResponse("200")
+    if request.method == "POST":
+        body = request.body
+        body = json.loads(body)
+        res_data = body.get('data')
+        res_data = str(res_data)
+        fir = random.randint(0, 30)  # 第一个序列的起始位置
+        sec = random.randint(fir, 30)  # 第二个序列的起始位置
+        fir_seq = res_data[fir:fir + 50]  # 截取长度为50的明文串为第一个序列
+        sec_seq = res_data[sec:sec + 50]  # 截取长度为50的明文串为第二个序列
+        res1 = json.dumps(fir_seq)  # 转换为json格式，
+        res1 = bytes(res1, encoding="utf8")  # 转换为bytes格式，否则encode无法接受
+        res2 = json.dumps(sec_seq)
+        res2 = bytes(res2, encoding="utf8")
+        fir_cip = encode(res1)  # 生成第一段序列的密文256
+        sec_cip = encode(res2)  # 生成第二段序列的密文256
+        fir_cip = base64.b64encode(fir_cip)  # 长度344
+        sec_cip = base64.b64encode(sec_cip)
+        cip_all = fir_cip + sec_cip
+        cip_all = cip_all[0:sec - fir] + cip_all[2 * sec:] + cip_all[sec - fir:2 * sec]  # 打乱密文
+        res_all = res_data[0:fir] + str(cip_all) + res_data[sec + 50:]
+        return HttpResponse(json.dumps(res_all, ensure_ascii=False), content_type="text/html,charset=utf-8")
+
+
+def test_decode(request):
+    if request.method == "OPTIONS":
+        response.status_code = 200
+        return HttpResponse("200")
+    if request.method == "POST":
+        body = request.body
+        body = json.loads(body)
+        endata = body.get('img_base64')
+        at = body.get('fir')
+        bt = body.get('sec')
+        a = min(at, bt)  # 选择a为较小的数
+        b = max(at, bt)  # 选择b为较大的数值
+        # 加密部分截取出来 688为加密部分的密文的长度
+        cip = endata[a:a + 688]
+
+        # 还原密文的原来的顺序
+        cip = cip[0:b - a] + cip[-(a + b):-1] + cip[-1] + cip[b - a:-(a + b)]
+        # cip1l = 0.5 * len(cip)=344 固定长度
+        fir_sep = cip[0:344]
+        sec_sep = cip[344:]
+        # 两个序列进行解密
+        fir_sep = decode(fir_sep)
+        sec_sep = decode(sec_sep)
+
+        # 根据第一序列和第二序列在整个明文中起始位置的不同选择不同的叠加方法
+        if at > bt:
+            dedata = endata[0:a] + sec_sep[0:b - a] + fir_sep + endata[a + 688:]
+        else:
+            dedata = endata[0:a] + fir_sep[0:b - a] + sec_sep + endata[a + 688:]
+
+        return HttpResponse(200)
+
+
 if __name__ == '__main__':
     # get_key()
     # miser解密测试

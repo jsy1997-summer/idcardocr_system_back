@@ -128,104 +128,104 @@ class FaceContrast:
     # 活体检测，避免用照片或者脸模
     def living_detect(self, image):
         image = image.split(",")[1]
-        # access_token = self.get_token()
-        # request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceverify"
-        # request_url = request_url + "?access_token=" + access_token
-        # headers = {'content-type': 'application/json'}
-        # params = [
-        #     {
-        #         "image": image,
-        #         "image_type": "BASE64",
-        #         "face_field": "expression,landmark,quality",
-        #         "option": "COMMON"
-        #
-        #     },
-        # ]  # expression(表情),landmark（特征点位置）
-        # response0 = requests.post(request_url, json=params, headers=headers)
-        # resp = response0.json()
-        # print(resp)
+        access_token = self.get_token()
+        request_url = "https://aip.baidubce.com/rest/2.0/face/v3/faceverify"
+        request_url = request_url + "?access_token=" + access_token
+        headers = {'content-type': 'application/json'}
+        params = [
+            {
+                "image": image,
+                "image_type": "BASE64",
+                "face_field": "expression,landmark,quality",
+                "option": "COMMON"
+
+            },
+        ]  # expression(表情),landmark（特征点位置）
+        response0 = requests.post(request_url, json=params, headers=headers)
+        resp = response0.json()
+        print(resp)
         # 人脸信息列表
-        # result = resp['result']
-        # face_liveness = result['face_liveness']
-        # tip = ""
-        # # 活体检测验证，避免考生使用照片或者视频通过人脸检测,阈值为0.3的置信概率为99.9%
-        # if face_liveness < 0.3:
-        #     tip = tip + "有用照片或者视频通过人脸验证作弊的嫌疑"
-        # face_list = result['face_list'][0]
-        # yaw = face_list['angle']['yaw']
-        # pitch = face_list['angle']['pitch']
-        # # print("左右旋转角度：" + str(yaw))
-        # # print("上下旋转角度：" + str(pitch))
-        # #  判断是否长时间左右扭头，左右扭动20deg，判断为左右扭头
-        # if abs(yaw) > 20:
-        #     yaw_result.append(1)
-        # else:
-        #     yaw_result.append(0)
-        # yaw_percent = self.percent(yaw_result)
-        # yaw_sum = [0.1, 0.25, 0.5, 0.75]
-        # yaw_tip = ['行为正常', '时常左顾右盼，有作弊嫌疑', '经常左顾右盼，有作弊嫌疑', '半数时间以上左顾右盼', "长时间左顾右盼，可判为作弊"]
-        # tip = tip + "；" + self.action_judge(yaw_percent, yaw_sum, yaw_tip)
-        #
-        # # 判断是否长时间低头，大于30deg，判断为低头
-        # if abs(pitch) > 30:
-        #     pitch_result.append(1)
-        # else:
-        #     pitch_result.append(0)
-        # pitch_percent = self.percent(pitch_result)
-        # pitch_sum = [0.1, 0.25, 0.5, 0.75]
-        # pitch_tip = ['行为正常', '时常低头，有作弊嫌疑', '经常低头，有作弊嫌疑', '半数时间以上低头', "长时间低头，可判为作弊"]
-        # tip = tip + "；" + self.action_judge(pitch_percent, pitch_sum, pitch_tip)
-        #
-        # # 判断脸部是否长时间被遮挡
-        # completeness = face_list['quality']['completeness']
-        # if completeness < 0.5:
-        #     completeness_result.append(1)
-        # else:
-        #     completeness_result.append(0)
-        # completeness_percent = self.percent(completeness_result)
-        # completeness_sum = [0.1, 0.25, 0.5, 0.75]
-        # completeness_tip = ['行为正常', '时常脸部被遮挡，有作弊嫌疑', '经常脸部被遮挡，有作弊嫌疑', '半数时间以上脸部被遮挡', "长时间脸部被遮挡，可判为作弊"]
-        # tip = tip + "；" + self.action_judge(completeness_percent, completeness_sum, completeness_tip)
-        #
-        # # 脸部特征点之间的距离变化，防止3d打印脸模型
-        # # 两眼之间的距离
-        # ey = np.array([face_list["landmark"][0]['x'], face_list["landmark"][0]['y']])
-        # ye = np.array([face_list["landmark"][1]['x'], face_list["landmark"][1]['y']])
-        # eye = np.linalg.norm(ey - ye)
-        # eye_gap.append(eye)
-        # eye_var = np.var(eye_gap)
-        # # 鼻子和嘴巴之间的距离
-        # nose = np.array([face_list["landmark"][2]['x'], face_list["landmark"][2]['y']])
-        # mouth = np.array([face_list["landmark"][3]['x'], face_list["landmark"][3]['y']])
-        # nm = np.linalg.norm(nose - mouth)
-        # nm_gap.append(nm)
-        # nm_var = np.var(nm_gap)
-        # # 用静态人脸测试，方差基本上都在1以下，动态人脸在1以上
-        # if eye_var > 1 and nm_var > 1:
-        #     tip = tip + "；" + "行为正常"
-        # else:
-        #     tip = tip + "；" + "有用假脸通过考试的嫌疑"
-        #
-        # result = {
-        #     "活体率": face_liveness,
-        #     "左右扭头概率": yaw_percent,
-        #     "低头概率": pitch_percent,
-        #     "脸部长时间被遮挡概率": completeness_percent,
-        #     "左右特征点方差": eye_var,
-        #     "上下特征点方差": nm_var,
-        # }
+        result = resp['result']
+        face_liveness = result['face_liveness']
+        tip = ""
+        # 活体检测验证，避免考生使用照片或者视频通过人脸检测,阈值为0.3的置信概率为99.9%
+        if face_liveness < 0.3:
+            tip = tip + "有用照片或者视频通过人脸验证作弊的嫌疑"
+        face_list = result['face_list'][0]
+        yaw = face_list['angle']['yaw']
+        pitch = face_list['angle']['pitch']
+        # print("左右旋转角度：" + str(yaw))
+        # print("上下旋转角度：" + str(pitch))
+        #  判断是否长时间左右扭头，左右扭动20deg，判断为左右扭头
+        if abs(yaw) > 20:
+            yaw_result.append(1)
+        else:
+            yaw_result.append(0)
+        yaw_percent = self.percent(yaw_result)
+        yaw_sum = [0.1, 0.25, 0.5, 0.75]
+        yaw_tip = ['行为正常', '时常左顾右盼，有作弊嫌疑', '经常左顾右盼，有作弊嫌疑', '半数时间以上左顾右盼', "长时间左顾右盼，可判为作弊"]
+        tip = tip + "；" + self.action_judge(yaw_percent, yaw_sum, yaw_tip)
+
+        # 判断是否长时间低头，大于20deg，判断为低头
+        if abs(pitch) > 20:
+            pitch_result.append(1)
+        else:
+            pitch_result.append(0)
+        pitch_percent = self.percent(pitch_result)
+        pitch_sum = [0.1, 0.25, 0.5, 0.75]
+        pitch_tip = ['行为正常', '时常低头，有作弊嫌疑', '经常低头，有作弊嫌疑', '半数时间以上低头', "长时间低头，可判为作弊"]
+        tip = tip + "；" + self.action_judge(pitch_percent, pitch_sum, pitch_tip)
+
+        # 判断脸部是否长时间被遮挡
+        completeness = face_list['quality']['completeness']
+        if completeness < 0.5:
+            completeness_result.append(1)
+        else:
+            completeness_result.append(0)
+        completeness_percent = self.percent(completeness_result)
+        completeness_sum = [0.1, 0.25, 0.5, 0.75]
+        completeness_tip = ['行为正常', '时常脸部被遮挡，有作弊嫌疑', '经常脸部被遮挡，有作弊嫌疑', '半数时间以上脸部被遮挡', "长时间脸部被遮挡，可判为作弊"]
+        tip = tip + "；" + self.action_judge(completeness_percent, completeness_sum, completeness_tip)
+
+        # 脸部特征点之间的距离变化，防止3d打印脸模型
+        # 两眼之间的距离
+        ey = np.array([face_list["landmark"][0]['x'], face_list["landmark"][0]['y']])
+        ye = np.array([face_list["landmark"][1]['x'], face_list["landmark"][1]['y']])
+        eye = np.linalg.norm(ey - ye)
+        eye_gap.append(eye)
+        eye_var = np.var(eye_gap)
+        # 鼻子和嘴巴之间的距离
+        nose = np.array([face_list["landmark"][2]['x'], face_list["landmark"][2]['y']])
+        mouth = np.array([face_list["landmark"][3]['x'], face_list["landmark"][3]['y']])
+        nm = np.linalg.norm(nose - mouth)
+        nm_gap.append(nm)
+        nm_var = np.var(nm_gap)
+        # 用静态人脸测试，方差基本上都在1以下，动态人脸在1以上
+        if eye_var > 1 and nm_var > 1:
+            tip = tip + "；" + "行为正常"
+        else:
+            tip = tip + "；" + "有用假脸通过考试的嫌疑"
+
         result = {
-            "活体率": random.randint(0, 10) / 10,
-            "左右扭头概率": random.randint(0, 10) / 10,
-            "低头概率": random.randint(0, 10) / 10,
-            "脸部长时间被遮挡概率": random.randint(0, 10) / 10,
-            "左右特征点方差": random.randint(0, 200),
-            "上下特征点方差": random.randint(0, 200),
-            "result": "",
+            "活体率": face_liveness,
+            "左右扭头概率": yaw_percent,
+            "低头概率": pitch_percent,
+            "脸部长时间被遮挡概率": completeness_percent,
+            "左右特征点方差": eye_var,
+            "上下特征点方差": nm_var,
         }
+        # result = {
+        #     "活体率": random.randint(0, 10) / 10,
+        #     "左右扭头概率": random.randint(0, 10) / 10,
+        #     "低头概率": random.randint(0, 10) / 10,
+        #     "脸部长时间被遮挡概率": random.randint(0, 10) / 10,
+        #     "左右特征点方差": random.randint(0, 200),
+        #     "上下特征点方差": random.randint(0, 200),
+        #     "result": "",
+        # }
         print(result)
-        print("d")
-        tip = 'haodedefwaf'
+
+        # tip = ''
 
         return tip, result
 
@@ -249,6 +249,9 @@ class FaceContrast:
             return tip[3]
         else:
             return tip[4]
+
+
+
 
 
 # 接收前端传来的注册信息数据
@@ -309,8 +312,8 @@ def contrast(request):
         eg = FaceContrast()
         # 判断是不是同一个人
         percent = {}
-        # result = eg.judge(card_image, liveimg)
-        result = "是同一个人"
+        result = eg.judge(card_image, liveimg)
+        # result = "是同一个人"
         if result == "是同一个人":
             result1, percent = eg.living_detect(liveimg)
         else:

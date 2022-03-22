@@ -98,6 +98,18 @@ def card_ocr(request):
         return HttpResponse(json.dumps(result, ensure_ascii=False), content_type="text/html,charset=utf-8")
 
 
+def test(request):
+    if request.method == "OPTIONS":
+        response.status_code = 200
+        return HttpResponse("200")
+    if request.method == "POST":
+        body = request.body
+        body = json.loads(body)
+        img = body.get("para")
+        print(img)
+        return HttpResponse(json.dumps(img, ensure_ascii=False), content_type="text/html,charset=utf-8")
+
+
 # 信息不加密直接识别
 class CardRecognition:
     def __init__(self):
